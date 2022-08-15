@@ -1,0 +1,78 @@
+-- DMFinanceiro.VW_CONSULTA_TERMO source
+
+CREATE  VIEW [DMFinanceiro].[VW_CONSULTA_TERMO] AS
+	SELECT
+		trm.APTO,
+		trm.CLIENTE,
+		trm.CODIGO_UNIDADE, -- coluna adicionada, solicitada pela Jeni - Renato Almeida 27/04/22
+		trm.DATA_EMISSAO_TERMO,
+		trm.DESC_STATUS_CONTRATO,
+		trm.STATUS_TERMO,
+		trm.DESC_STATUS_TERMO,
+		trm.DESC_TERMO,
+		trm.TIPO_CONTRATO,
+		trm.ESTRUTURA_1,
+		trm.ESTRUTURA_2,
+		trm.GRUPO_EMPRESA,
+		trm.REGIONAL,
+		trm.NOME_FILIAL,
+		trm.CODIGO_EMPREENDIMENTO,
+		trm.CODIGO_REDUZIDO_PROJETO,
+		trm.NUMERO_CONTRATO,
+		trm.CODIGO_TERMO,
+		trm.VALOR_TERMO,
+		trm.DATA_ENTREGA_BLOCO, -- coluna adicionada - Leandro Yonemura 27/06/22
+		trm.DATA_DISTRATO_TERMO, -- coluna adicionada - Leandro Yonemura 27/06/22
+		car.VALOR AS VALOR_A_VENCER,
+		ina.VALOR AS VALOR_INADIMPLENTE,
+		par.VALOR_PAGO AS LIQUIDADOS,
+		trm.VALOR_CONTRATO_ORIGINAL,
+		par.VALOR_DESCONTO,
+		dt.DATA_BASE,
+		cc.VALOR_PAGO AS CARTA_DE_CREDITO,
+		(par.VALOR_PAGO - cc.VALOR_PAGO) AS LIQUIDADOS_A_CONSIDERAR,
+		(trm.VALOR_TERMO - car.VALOR - par.VALOR_PAGO) AS DIF
+	FROM DMFinanceiro.VW_CONTRATO_TERMO trm	
+	--troca do busca da DATA_BASE, buscar todas as datas (indiscriminadamente) a partir do 17/03 (ou a partir da data_emissao_termo, o que acontecer por ultimo) pq é qndo foi feito a inclusão do ctt_in_codigo da fcarteira - Renato Almeida 07/04/22
+	CROSS APPLY (
+		SELECT A.DATA AS DATA_BASE
+		FROM DMGeral.D_CALENDARIO A
+		WHERE A.DATA >= trm.DATA_EMISSAO_TERMO
+			AND A.DATA BETWEEN '2022-03-17'
+				AND GETDATE() - 1
+	) dt
+	--separado o campo VALOR_ABERTO em VALOR_A_VENCER e VALOR_INADIMPLENTE, pra isso adição dos cross applys car e ina - Renato Almeida 07/04/22
+	CROSS APPLY (
+		SELECT COALESCE(SUM(AB.VALOR), 0) AS VALOR
+		FROM DMFinanceiro.F_CARTEIRA AB
+		WHERE AB.NUMERO_CONTRATO = trm.NUMERO_CONTRATO
+			AND AB.DATA_BASE = dt.DATA_BASE
+			AND AB.CTT_IN_CODIGO = trm.CODIGO_TERMO
+			AND AB.DATA_VENCIMENTO >= AB.DATA_BASE
+	) car
+	CROSS APPLY (
+		SELECT COALESCE(SUM(AC.VALOR), 0) AS VALOR
+		FROM DMFinanceiro.F_CARTEIRA AC
+		WHERE AC.NUMERO_CONTRATO = trm.NUMERO_CONTRATO
+			AND AC.DATA_BASE = dt.DATA_BASE
+			AND AC.CTT_IN_CODIGO = trm.CODIGO_TERMO
+			AND AC.DATA_VENCIMENTO < AC.DATA_BASE
+	) ina
+	CROSS APPLY (
+		SELECT
+			COALESCE(SUM(B.VALOR_PAGO), 0) AS VALOR_PAGO,
+			COALESCE(SUM(B.VALOR_DESCONTO), 0) AS VALOR_DESCONTO
+		FROM DMFinanceiro.F_PARCELA B
+		WHERE B.NUMERO_CONTRATO = trm.NUMERO_CONTRATO
+			AND B.DATA_MOVIMENTO < dt.DATA_BASE
+			AND B.CTT_IN_CODIGO = trm.CODIGO_TERMO
+	) par
+	CROSS APPLY (
+		SELECT COALESCE(SUM(C.VALOR_PAGO), 0) AS VALOR_PAGO
+		FROM DMFinanceiro.F_PARCELA C
+		WHERE C.NUMERO_CONTRATO = trm.NUMERO_CONTRATO
+			AND C.DATA_MOVIMENTO < dt.DATA_BASE
+			AND C.CTT_IN_CODIGO = trm.CODIGO_TERMO --Adicionado para agrupar pelo termo - Renato Almeida 08/04/22
+			AND C.SK_D_RECEITA_BAIXA = 7
+	) cc
+	WHERE trm.VALOR_TERMO > 0 -- filtro para remover os termos que não possuem valor (registros de quitação de contrato que não teve termo algum) - Renato Almeida 07/04/22;
