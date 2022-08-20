@@ -2,45 +2,7 @@
 
 CREATE VIEW
 [DMFinanceiro].[VW_SITUACAO_UNIDADE_UNIFICADA] AS
-	
-	/*WITH ULTIMO_DIA_MES AS (
-		SELECT MAX(DATA) DATA_MAX
-		FROM DMGeral.D_CALENDARIO A
-		WHERE (
-				ANO = YEAR(GETDATE())
-				AND MES = MONTH(GETDATE()) - 1
-			)
-			OR (
-				ANO = YEAR(GETDATE()) - 1
-				AND MES = 12
-				AND MONTH(GETDATE()) = 1
-			)
-		UNION
-		SELECT MAX(DATA) DATA_MAX
-		FROM DMGeral.D_CALENDARIO A
-		WHERE (
-				ANO = YEAR(GETDATE())
-				AND MES = MONTH(GETDATE()) - 2
-			)
-			OR (
-				ANO = YEAR(GETDATE()) - 1
-				AND MES = 11
-				AND MONTH(GETDATE()) = 1
-			)
-		UNION
-		SELECT DATA DATA_MAX
-		FROM DMGeral.D_CALENDARIO A
-		WHERE (
-				--ANO = YEAR(GETDATE()) -1
-				--AND MES = MONTH(GETDATE())
-			--)
-		--OR (
-				ANO = YEAR(GETDATE())
-				AND MES = 1
-				AND MONTH(GETDATE()) = 1
-			)
-	)*/
-	--Renato Almeida: Trecho alterado para capturar o último dia do mês dos históricos de 01/2021 até o último antes do mês atual + todos os dias do mês atual
+
 	WITH ULTIMO_DIA_MES AS (
 		SELECT DISTINCT EOMONTH(DATA) DATA_MAX
 		FROM DMGeral.D_CALENDARIO A
@@ -108,7 +70,7 @@ CREATE VIEW
 		FUN.DATA_BASE,
 		I.DATA_DISTRATO,
 		cto.DATA_CONTRATO,
-		--CASE alterado para conseguir classificar E\S tanto quando há uma venda>distrato como um distrato>venda (não estava conseguindo fazer isso) - Renato Almeida 04/04/22
+
 		CASE
 			WHEN MONTH(DATA_DISTRATO) = MONTH(FUN.DATA_BASE)
 				AND YEAR(DATA_DISTRATO) = YEAR(FUN.DATA_BASE)
@@ -235,7 +197,6 @@ CREATE VIEW
 		INNER JOIN DMSys.D_TIPO_EMPREENDIMENTO H ON H.SK_TIPO_EMPREENDIMENTO = A.SK_D_TIPO_EMPREENDIMENTO
 		LEFT JOIN MENOR_DATA_VENDA x ON EMP.SK_D_EMPREENDIMENTO = x.SK_D_EMPREENDIMENTO
 		LEFT JOIN DMFinanceiro.F_DISTRATO I ON cto.NUMERO_CONTRATO = I.NUMERO_CONTRATO
-			-- Renato Almeida: Condições adicionadas ao join para garantir que as datas de distrato sejam apenas do mesmo ano/mes que a data base
 			AND YEAR(I.DATA_DISTRATO) = YEAR(FUN.DATA_BASE)
 			AND MONTH(I.DATA_DISTRATO) = MONTH(FUN.DATA_BASE)
 	WHERE X.SAFRA IS NOT NULL
