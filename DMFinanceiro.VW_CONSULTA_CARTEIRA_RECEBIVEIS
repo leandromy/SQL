@@ -1,7 +1,5 @@
 -- DMFinanceiro.VW_CONSULTA_CARTEIRA_RECEBIVEIS source
 
--- DMFinanceiro.VW_CONSULTA_CARTEIRA_RECEBIVEIS source
-
 CREATE  VIEW [DMFinanceiro].[VW_CONSULTA_CARTEIRA_RECEBIVEIS] AS
 	SELECT
 		DATEADD(DAY, 1, DATA_BAIXA) AS DATA_BAIXA
@@ -76,7 +74,6 @@ CREATE  VIEW [DMFinanceiro].[VW_CONSULTA_CARTEIRA_RECEBIVEIS] AS
 			'2022-03-01'
 		)
 
-	--union para trazer as informações da inadimplencia
 	UNION
 
 	SELECT 
