@@ -75,8 +75,8 @@ CREATE VIEW [DMFinanceiro].[VW_CONSULTA_MI_69] AS
 			WHEN CAL.DATA = CAST('1900/01/01' AS DATE)
 			THEN CON.DATA_CONTRATO
 			ELSE CAL.DATA
-		END AS DATA_VENDA_SYS,--troca do nome para DATA_VENDA_SYS, pq a efetivada será baseada em outro campo - Renato Almeida - 18/05/22
-		OC.DATA_CADASTRO_OCORRENCIA  AS DATA_VENDA_EFETIVADA, --campo adicionado da nova dimensão de ocororrencias, pra pegar a data da ocorrencia 'Inclusão de Contrato#a' - Renato Almeida 18/05/22
+		END AS DATA_VENDA_SYS,
+		OC.DATA_CADASTRO_OCORRENCIA  AS DATA_VENDA_EFETIVADA,
 		UND.CODIGO_UNIDADE AS CODIGO_UNIDADE_MEGA
 	FROM Contratos CON
 	LEFT JOIN DMGeral.D_EMPREENDIMENTO EMP ON CON.SK_D_EMPREENDIMENTO = EMP.SK_D_EMPREENDIMENTO
